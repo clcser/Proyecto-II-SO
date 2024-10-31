@@ -39,8 +39,8 @@ public:
     //bool extraer() {}
 };
 
-//void productor() {}
-//void consumidor() {}
+void productor(ColaCircular &cola, int id, int cantidad_items) {}
+void consumidor(ColaCircular &cola, int id, int tiempo_espera) {}
 
 int main(int argc, char *argv[]) {
     if (argc != 9) {
@@ -59,5 +59,18 @@ int main(int argc, char *argv[]) {
         else if (string(argv[i]) == "-t") 
             tiempo_espera = atoi(argv[i + 1]);
     }
-    //cout << num_productores << ", " << num_consumidores << ", " << tam_inicial << ", " << tiempo_espera << "\n";
+
+    ColaCircular cola(tam_inicial, "log.txt");
+    std::vector<std::thread> productores, consumidores;
+    
+    int items = 10; // Cantidad de items que añade un productor
+    
+    for(int i = 0; i < num_productores; i++) {
+        productores.emplace_back(productor, ref(cola), i, items);
+    }
+
+    for(int i = 0; i < num_consumidores; i++) {
+        productores.emplace_back(consumidor, ref(cola), i, tiempo_espera);
+    }
+
 }

@@ -38,7 +38,7 @@ public:
         log << "Inicio del log de la simulación\n";
     }
 
-    void agregar(int item) {            //Method for Productors to add items to the circular queue.
+    void agregar(int item){            //Method for Producers to add items to the circular queue.
         std::unique_lock<std::mutex> lock(mtx);                         //Acquire lock! >:)
         not_full.wait(lock, [this] { return elementos < capacidad; });  //Wait for the Circular Queue to have space.
 
@@ -54,7 +54,7 @@ public:
         not_empty.notify_one();         // Notify the waiting consumers that we've got a new batch of ice cream :)
     }
 
-    void extraer(int &item, int max_wait_seconds) {     // Method for Consumers to extract items from the circular queue.
+    void extraer(int &item, int max_wait_seconds){     // Method for Consumers to extract items from the circular queue.
         std::unique_lock<std::mutex> lock(mtx);         // El mutex es mío, me lo quieren quitar...
 
         if (!not_empty.wait_for(lock, std::chrono::seconds(max_wait_seconds), [this] { return elementos > 0; })) // Wait for ice cream batches to arrive to the Circular Queue.
@@ -69,16 +69,50 @@ public:
             reducir_cola(); // Reduce the size of the ice cream truck!! We can't afford these taxes!!
         }
         log << "Consumido: " << item << ". || Tamaño de cola: " << elementos << " || Capacidad: " << capacidad << "\n";
-        not_full.notify_one();      //Notify a waiting productor that the queue ain't full anymore.
+        not_full.notify_one();      //Notify a waiting producer that the queue ain't full anymore.
     }
 };
 
-//void productor() {}
-//void consumidor() {}
+void productor(ColaCircular &queue, int wait_time){
+    while(true){
+        int item = rand()%100;      //Gotta love 69 flavor ice cream.
+        queue.agregar(item);        //Add number-flavor ice cream.
+        std::this_thread::sleep_for(std::chrono::seconds(wait_time));
+    }
+};
+
+void consumidor(ColaCircular &queue, int max_wait_seconds){
+    queue.extraer(item, max_wait_seconds);  //Consumer extracts first element in the queue.
+};
 
 int main(int argc, char *argv[]) {
     if (argc != 9) {
         std::cerr << "Uso: " << argv[0] << " -p <num_productores> -c <num_consumidores> -s <tam_inicial> -t <tiempo_espera>\n";
         return 1;
+    }
+    
+    int num_productores, num_consumidores, tam_inicial, tiempo_espera;
+    for (int i = 1; i < argc; i += 2) {
+        if (string(argv[i]) == "-p") 
+            num_productores = atoi(argv[i + 1]);
+        else if (string(argv[i]) == "-c") 
+            num_consumidores = atoi(argv[i + 1]);
+        else if (string(argv[i]) == "-s") 
+            tam_inicial = atoi(argv[i + 1]);
+        else if (string(argv[i]) == "-t") 
+            tiempo_espera = atoi(argv[i + 1]);
+    }
+
+    ColaCircular cola(tam_inicial, "log.txt");
+    std::vector<std::thread> productores, consumidores;
+    
+    int items = 10; // Cantidad de items que añade un productor
+    
+    for(int i = 0; i < num_productores; i++) {
+        productores.emplace_back(productor, ref(cola), i, items);
+    }
+
+    for(int i = 0; i < num_consumidores; i++) {
+        productores.emplace_back(consumidor, ref(cola), i, tiempo_espera);
     }
 }

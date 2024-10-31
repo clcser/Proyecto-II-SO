@@ -1,3 +1,3 @@
 # Proyecto-II-SO
-compilar con g++ simulapc.cpp -o simulapc -pthread
-ejecutar con ./simulapc -p 10 -c 5 -s 50 -t 1
+compilar con `g++ simulapc.cpp -o simulapc -pthread` \
+ejecutar con `./simulapc -p <num_productores> -c <num_consumidores> -s <tam_inicial> -t <tiempo_espera>`

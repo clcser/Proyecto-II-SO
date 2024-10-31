@@ -15,6 +15,8 @@ private:
     int capacidad;
     int frente, final, elementos;
     ofstream log;
+    mutex mtx;                                 //Not you again... Noooooo!!
+    condition_variable not_full, not_empty;    //Initialize condition variables for the monitor.
 
     void duplicar_cola() {
         capacidad *= 2;
@@ -34,9 +36,39 @@ public:
         log << "Inicio del log de la simulación\n";
     }
 
-    //void agregar() {}
+     void agregar(int item) {            //Method for Productors to add items to the circular queue.
+        unique_lock<mutex> lock(mtx);                         //Acquire lock! >:)
+        not_full.wait(lock, [this] { return elementos < capacidad; });  //Wait for the Circular Queue to have space.
 
-    //bool extraer() {}
+        buffer[final] = item;           //We add the item at the end of the queue.
+        final = (final+1)%capacidad;    //Move the final index one step to the right.
+        elementos++;                    //New item to the queue update.
+
+        if (elementos == capacidad){    // If the queue reaches its limit...
+            duplicar_cola();            // Dup its size.
+        } 
+
+        log << "Añadido: " << item << ". || Tamaño de cola: " << elementos << " || Capacidad: " << capacidad << "\n";
+        not_empty.notify_one();         // Notify the waiting consumers that we've got a new batch of ice cream :)
+    }
+
+    void extraer(int &item, int max_wait_seconds) {     // Method for Consumers to extract items from the circular queue.
+        unique_lock<mutex> lock(mtx);         // El mutex es mío, me lo quieren quitar...
+
+        if (!not_empty.wait_for(lock, chrono::seconds(max_wait_seconds), [this] { return elementos > 0; })) // Wait for ice cream batches to arrive to the Circular Queue.
+            return; // "bruh, we've been waiting here for [max_wait_seconds], let's get outta here...""
+
+        // If there's an ice cream batch in the Circular Queue...
+        item = buffer[frente];          // We extract the ice cream.
+        frente = (frente+1)%capacidad;  // Move the front index one step to the left.
+        elementos--;                    // Farewell... mint flavour ice cream...
+
+        if (elementos < capacidad / 4 && capacidad > 1){   //If the number of ice cream flavours reaches 25% of the capacity or less...
+            reducir_cola(); // Reduce the size of the ice cream truck!! We can't afford these taxes!!
+        }
+        log << "Consumido: " << item << ". || Tamaño de cola: " << elementos << " || Capacidad: " << capacidad << "\n";
+        not_full.notify_one();      //Notify a waiting productor that the queue ain't full anymore.
+    }
 };
 
 void productor(ColaCircular &cola, int id, int cantidad_items) {}
@@ -61,7 +93,7 @@ int main(int argc, char *argv[]) {
     }
 
     ColaCircular cola(tam_inicial, "log.txt");
-    std::vector<std::thread> productores, consumidores;
+    vector<thread> productores, consumidores;
     
     int items = 10; // Cantidad de items que añade un productor
     

@@ -19,7 +19,6 @@ private:
     mutex mtx;                                 //Not you again... Noooooo!!
     condition_variable not_full, not_empty;    //Initialize condition variables for the monitor.
 
-
     void duplicar_cola() {
         capacidad *= 2;
         buffer.resize(capacidad);
@@ -96,7 +95,7 @@ int main(int argc, char *argv[]) {
         cerr << "Uso: " << argv[0] << " -p <num_productores> -c <num_consumidores> -s <tam_inicial> -t <tiempo_espera>\n";
         return 1;
     }
-
+    
     int num_productores, num_consumidores, tam_inicial, tiempo_espera;
     for (int i = 1; i < argc; i += 2) {
         if (string(argv[i]) == "-p") 
@@ -108,7 +107,6 @@ int main(int argc, char *argv[]) {
         else if (string(argv[i]) == "-t") 
             tiempo_espera = atoi(argv[i + 1]);
     }
-
 
     ColaCircular cola(tam_inicial, "log.txt");
     vector<thread> productores, consumidores;

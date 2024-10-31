@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "thread": "cpp",
+        "vector": "cpp",
+        "condition_variable": "cpp"
+    }
+}

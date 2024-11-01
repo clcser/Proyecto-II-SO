@@ -87,8 +87,9 @@ void productor(ColaCircular &queue, int wait_time, int ctd_items){
 
 void consumidor(ColaCircular &queue, int max_wait_seconds){
     int item;
-    queue.extraer(item, max_wait_seconds);  //Consumer extracts first element in the queue.
-};
+    while(queue.extraer(item, max_wait_seconds))  //Consumer extracts first element in the queue.
+        this_thread::sleep_for(chrono::milliseconds(100));
+};  
 
 int main(int argc, char *argv[]) {
     if (argc != 9) {

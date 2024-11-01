@@ -6,15 +6,18 @@
 #include <fstream>
 #include <chrono>
 #include <cstdlib>
+#include <string>
+
+using namespace std;
 
 class ColaCircular {
 private:
-    std::vector<int> buffer;
+    vector<int> buffer;
     int capacidad;
     int frente, final, elementos;
-    std::ofstream log;
-    std::mutex mtx;                                 //Not you again... Noooooo!!
-    std::condition_variable not_full, not_empty;    //Initialize condition variables for the monitor.
+    ofstream log;
+    mutex mtx;                                 //Not you again... Noooooo!!
+    condition_variable not_full, not_empty;    //Initialize condition variables for the monitor.
 
     void duplicar_cola() {
         capacidad *= 2;
@@ -33,13 +36,13 @@ private:
     }
 
 public:
-    ColaCircular(int tam_inicial, const std::string& log_filename) 
+    ColaCircular(int tam_inicial, const string& log_filename) 
         : capacidad(tam_inicial), buffer(tam_inicial), frente(0), final(0), elementos(0), log(log_filename) {
         log << "Inicio del log de la simulación\n";
     }
 
     void agregar(int item){            //Method for Producers to add items to the circular queue.
-        std::unique_lock<std::mutex> lock(mtx);                         //Acquire lock! >:)
+        unique_lock<mutex> lock(mtx);                         //Acquire lock! >:)
         not_full.wait(lock, [this] { return elementos < capacidad; });  //Wait for the Circular Queue to have space.
 
         buffer[final] = item;           //We add the item at the end of the queue.
@@ -54,10 +57,10 @@ public:
         not_empty.notify_one();         // Notify the waiting consumers that we've got a new batch of ice cream :)
     }
 
-    void extraer(int &item, int max_wait_seconds){     // Method for Consumers to extract items from the circular queue.
-        std::unique_lock<std::mutex> lock(mtx);         // El mutex es mío, me lo quieren quitar...
+    bool extraer(int &item, int max_wait_seconds){     // Method for Consumers to extract items from the circular queue.
+        unique_lock<mutex> lock(mtx);         // El mutex es mío, me lo quieren quitar...
 
-        if (!not_empty.wait_for(lock, std::chrono::seconds(max_wait_seconds), [this] { return elementos > 0; })) // Wait for ice cream batches to arrive to the Circular Queue.
+        if (!not_empty.wait_for(lock, chrono::seconds(max_wait_seconds), [this] { return elementos > 0; })) // Wait for ice cream batches to arrive to the Circular Queue.
             return false; // "bruh, we've been waiting here for [max_wait_seconds], let's get outta here...""
 
         // If there's an ice cream batch in the Circular Queue...
@@ -70,24 +73,26 @@ public:
         }
         log << "Consumido: " << item << ". || Tamaño de cola: " << elementos << " || Capacidad: " << capacidad << "\n";
         not_full.notify_one();      //Notify a waiting producer that the queue ain't full anymore.
+        return true;
     }
 };
 
-void productor(ColaCircular &queue, int wait_time){
-    while(true){
+void productor(ColaCircular &queue, int wait_time, int ctd_items){
+    for(int i=0; i<ctd_items; i++){
         int item = rand()%100;      //Gotta love 69 flavor ice cream.
         queue.agregar(item);        //Add number-flavor ice cream.
-        std::this_thread::sleep_for(std::chrono::seconds(wait_time));
+        this_thread::sleep_for(chrono::milliseconds(wait_time));
     }
 };
 
 void consumidor(ColaCircular &queue, int max_wait_seconds){
+    int item;
     queue.extraer(item, max_wait_seconds);  //Consumer extracts first element in the queue.
 };
 
 int main(int argc, char *argv[]) {
     if (argc != 9) {
-        std::cerr << "Uso: " << argv[0] << " -p <num_productores> -c <num_consumidores> -s <tam_inicial> -t <tiempo_espera>\n";
+        cerr << "Uso: " << argv[0] << " -p <num_productores> -c <num_consumidores> -s <tam_inicial> -t <tiempo_espera>\n";
         return 1;
     }
     
@@ -104,15 +109,30 @@ int main(int argc, char *argv[]) {
     }
 
     ColaCircular cola(tam_inicial, "log.txt");
-    std::vector<std::thread> productores, consumidores;
+    vector<thread> productores, consumidores;
     
     int items = 10; // Cantidad de items que añade un productor
     
     for(int i = 0; i < num_productores; i++) {
-        productores.emplace_back(productor, ref(cola), i, items);
+        productores.emplace_back(productor, ref(cola), tiempo_espera, items);
     }
 
     for(int i = 0; i < num_consumidores; i++) {
-        productores.emplace_back(consumidor, ref(cola), i, tiempo_espera);
+        consumidores.emplace_back(consumidor, ref(cola), tiempo_espera);
+    }
+
+    //Thanks ChatGPT for the following chunk of code, it saved our program for reasons that escape my understanding.
+    // Join producer threads
+    for (auto &t : productores) {
+        if (t.joinable()) {
+            t.join();
+        }
+    }
+
+    // Join consumer threads
+    for (auto &t : consumidores) {
+        if (t.joinable()) {
+            t.join();
+        }
     }
 }

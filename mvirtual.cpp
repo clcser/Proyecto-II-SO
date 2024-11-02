@@ -37,7 +37,7 @@ class VMSim{                                            // Activate Protocol: De
         int numFrames;
         string algoritmo_de_reemplazo;
         PageTable pageTable;
-        queue<int> frames;
+        deque<int> frames;
         unordered_map<int, list<int>> marcoMap;
         int pageErrors = 0;
         vector<int> pageReferences;
@@ -47,6 +47,7 @@ class VMSim{                                            // Activate Protocol: De
 
         void loadReferences(const string &filename){                           // We read the page references from the inputted file and store them in the pageReference vector.
             ifstream file(filename);
+            int page;
             while(file >> page){
                 pageReferences.push_back(page);
             }
@@ -59,12 +60,20 @@ class VMSim{                                            // Activate Protocol: De
                 fifo();
             }else if(algoritmo_de_reemplazo == "LRU"){
                 lru();
-            }else if(algoritmo_de_reemplazo == "LRU Reloj simple"){
+            }else if(algoritmo_de_reemplazo == "LRURelojSimple"){
                 lru_reloj_simple();
             }else{
                 cout << "Algoritmo " << algoritmo_de_reemplazo << " no compatible." << endl;
             }
         }
+
+        void printFrames(){
+            cout << "FRAMES: ";
+            for(int f : frames)
+                cout << f << ' ';
+            cout << '\n';
+        }
+
 
         void optimo(){
             
@@ -82,6 +91,7 @@ class VMSim{                                            // Activate Protocol: De
                     frames.push_back(page);                                     // We add the new page into the queue.
                     pageTable.addPage(page, frames.size() - 1);                 // And we add it to the page table with an updated number of frames.
                 }
+                printFrames();                                              // Extra function to see how the frames are turning out.
             }
         }
 
@@ -103,15 +113,16 @@ class VMSim{                                            // Activate Protocol: De
                     frames.push_back(page);                                 // Reinsert it at the back to mark it as most recently used.
                 }
                 pageTable.addPage(page, frames.size() - 1);                 // Update the page table to reflect the page's position in frames
+                printFrames();                                              // Extra function to see how the frames are turning out.
             }
         }
 
         void lru_reloj_simple(){                                    
             vector<int> use_bit(numFrames, 0);                              // We initialize the "clock" vector, with all its positions in 0 to indicate they're associated to an "lru-page". 
             int clock_hand = 0;                                             // "Clock" clock_hand starts at hour 0 haha cute :3      
-            for(int page : references){                                     // Loop over each page reference in the sequence.
+            for(int page : pageReferences){                                 // Loop over each page reference in the sequence.
                 if(find(frames.begin(), frames.end(), page) == frames.end()){   // If the page isn't in memory...
-                    pageFaults++;                                           // Ayo people we've got a page error yo
+                    pageErrors++;                                           // Ayo people we've got a page error yo
                     while(use_bit[clock_hand] == 1){                        // While the bit currently pointed by the clock's clock_hand is 1 (recently used page)
                         use_bit[clock_hand] = 0;                            // Set it to 0 (no longer recently used :C)
                         clock_hand = (clock_hand + 1) % numFrames;          // Move the clock's hand to the next position. (We get the % because this is a clock and is CIRCULAR :D)
@@ -130,9 +141,14 @@ class VMSim{                                            // Activate Protocol: De
                     int index = distance(frames.begin(), find(frames.begin(), frames.end(), page)); // Update its use bit to 1... Because Gamers don't die, they respawn.
                     use_bit[index] = 1;
                 }
+                printFrames();                                              // Extra function to see how the frames are turning out.
             }
         }
-}
+
+        int returnErrors(){
+            return pageErrors;
+        }
+};
 
 
 int main(int argc, char* argv[]) {
@@ -154,6 +170,11 @@ int main(int argc, char* argv[]) {
             return 1;
         }
     }
+
+    VMSim vm(num_marcos, algoritmo);
+    vm.loadReferences(archivo_referencias);
+    vm.beginSimulation();
+    cout << "Errors: " << vm.returnErrors() << '\n';
 
     return 0;
 }

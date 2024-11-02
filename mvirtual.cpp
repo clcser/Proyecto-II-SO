@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <algorithm>
 #include <string>
+#include <map>
+#include <climits>
 
 using namespace std;
 
@@ -38,6 +40,7 @@ class VMSim{                                            // Activate Protocol: De
         string algoritmo_de_reemplazo;
         PageTable pageTable;
         deque<int> frames;
+        vector<int> frames_optimo;
         unordered_map<int, list<int>> marcoMap;
         int pageErrors = 0;
         vector<int> pageReferences;
@@ -74,9 +77,74 @@ class VMSim{                                            // Activate Protocol: De
             cout << '\n';
         }
 
+        void printFramesOptimo(){
+            cout << "FRAMES: ";
+            for(int f : frames_optimo) {
+                if( f == -1)
+                    continue;
+                cout << f << ' ';
+            }
+            cout << '\n';
+        }
 
-        void optimo(){
-            
+
+        void optimo() {
+            // preprocesado para almacenar las posiciones en que aparece cada
+            // pagina
+            frames_optimo.resize(numFrames, -1);
+            map<int, vector<int>> occurrences;
+            for(int i = 0; i < pageReferences.size(); ++i) {
+                occurrences[pageReferences[i]].push_back(i);
+            }
+
+            // for(map<int, vector<int>>::iterator i = occurrences.begin(); i != occurrences.end(); i++) {
+            //     for(int j = 0; j < i->second.size(); ++j) {
+            //         cout << i->second[j] << " ";
+            //     }
+            //     cout << "\n";
+            // }
+
+            // el algoritmo revisa cada pagina almacenada y reemplaza la que
+            // tenga una ocurrencia mas lejana por la página entrante. 
+            for(int i = 0; i < pageReferences.size(); ++i) {
+                //cout << "i = " << i << "\n";
+                int page = pageReferences[i];
+                if(find(frames_optimo.begin(), frames_optimo.end(), page) == frames_optimo.end()) { // If the page isn't in memory...
+                    pageErrors++;
+                    int idx = 0;
+                    int max_dist = 0;
+                    for(int j = 0; j < frames_optimo.size(); ++j) { // revisa cada pagina almacenada
+                        //cout << "j = " << j << "\n"; 
+                        int page_frame = frames_optimo[j];
+                        
+                        if(page_frame == -1) {
+                            idx = j;
+                            break;
+                        }
+
+                        auto ub = upper_bound(occurrences[page_frame].begin(), occurrences[page_frame].end(), i);
+
+                        if(ub == occurrences[page_frame].end()) { // si la página no vuelve a aparecer
+                            max_dist = INT_MAX;
+                            idx = j;
+                        }
+                        else {
+                            int curr_dist = ub - occurrences[page_frame].begin() - i; // distancia a la proxima vez que aparezca
+                            if(curr_dist > max_dist) {
+                                max_dist = curr_dist;
+                                idx = j;
+                            }
+                        }
+                    }
+                    //cout << "ola\n";
+                    // reemplazar por la mas lejana
+                    pageTable.removePage(frames_optimo[idx]);
+                    pageTable.addPage(page, frames_optimo.size() - 1);
+                    frames_optimo[idx] = page;
+                    //cout << "adios\n";
+                }
+                printFramesOptimo();
+            }
         }
 
         void fifo(){

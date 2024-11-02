@@ -32,7 +32,7 @@ class PageTable{
         }
 }
 
-class VMSim{                                        // Activate Protocol: Death by Caffeine Overdose.
+class VMSim{                                            // Activate Protocol: Death by Caffeine Overdose.
     private:
         int numFrames;
         string algoritmo_de_reemplazo;
@@ -112,21 +112,21 @@ class VMSim{                                        // Activate Protocol: Death 
         for(int page : references){                                     // Loop over each page reference in the sequence.
             if(find(frames.begin(), frames.end(), page) == frames.end()){   // If the page isn't in memory...
                 pageFaults++;                                           // Ayo people we've got a page error yo
-                while(use_bit[clock_hand] == 1){                    // While the bit currently pointed by the clock's clock_hand is 1 (recently used page)
-                    use_bit[clock_hand] = 0;                        // Set it to 0 (no longer recently used :C)
-                    clock_hand = (clock_hand + 1) % numFrames;      // Move the clock's hand to the next position. (We get the % because this is a clock and is CIRCULAR :D)
-                }                                                   // REMINDER: If the while ends, that means that the clock's hand is pointing to a page with a 0 bit (recently unused page).
+                while(use_bit[clock_hand] == 1){                        // While the bit currently pointed by the clock's clock_hand is 1 (recently used page)
+                    use_bit[clock_hand] = 0;                            // Set it to 0 (no longer recently used :C)
+                    clock_hand = (clock_hand + 1) % numFrames;          // Move the clock's hand to the next position. (We get the % because this is a clock and is CIRCULAR :D)
+                }                                                       // REMINDER: If the while ends, that means that the clock's hand is pointing to a page with a 0 bit (recently unused page).
 
-                if (frames.size() == numFrames) {                   // If the size of the stored pages currently in frames is equal to the max number of frames...
-                    pageTable.removePage(frames[clock_hand]);       // We remove the page currently pointed at by the clock's hand from the page table.
-                    frames[clock_hand] = page;                      // And replace it with the page pointed at by the clock's hand.
-                }else{                                              // If there is space...
-                    frames.push_back(page);                         // Add the new page to the frames queue.
+                if (frames.size() == numFrames) {                       // If the size of the stored pages currently in frames is equal to the max number of frames...
+                    pageTable.removePage(frames[clock_hand]);           // We remove the page currently pointed at by the clock's hand from the page table.
+                    frames[clock_hand] = page;                          // And replace it with the page pointed at by the clock's hand.
+                }else{                                                  // If there is space...
+                    frames.push_back(page);                             // Add the new page to the frames queue.
                 }
-                use_bit[clock_hand] = 1;                            // Set the bit pointed at by the clock's hand to 1 to indicate it has just been used.
-                pageTable.addPage(page, clock_hand);                // And we add the page to the page tabel.
-                clock_hand = (clock_hand + 1) % numFrames;          // Then we update the clock's hand.
-            }else{                                                  // If the page is already in memory...
+                use_bit[clock_hand] = 1;                                // Set the bit pointed at by the clock's hand to 1 to indicate it has just been used.
+                pageTable.addPage(page, clock_hand);                    // And we add the page to the page tabel.
+                clock_hand = (clock_hand + 1) % numFrames;              // Then we update the clock's hand.
+            }else{                                                      // If the page is already in memory...
                 int index = distance(frames.begin(), find(frames.begin(), frames.end(), page)); // Update its use bit to 1... Because Gamers don't die, they respawn.
                 use_bit[index] = 1;
             }

@@ -198,7 +198,7 @@ class VMSim{                                            // Activate Protocol: De
 
                     if (frames.size() == numFrames) {                       // If the size of the stored pages currently in frames is equal to the max number of frames...
                         pageTable.removePage(frames[clock_hand]);           // We remove the page currently pointed at by the clock's hand from the page table.
-                        frames[clock_hand] = page;                          // And replace it with the page pointed at by the clock's hand.
+                        frames[clock_hand] = page;                          // And replace it with a new page.
                     }else{                                                  // If there is space...
                         frames.push_back(page);                             // Add the new page to the frames queue.
                     }

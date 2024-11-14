@@ -41,8 +41,8 @@ public:
         log << "Inicio del log de la simulación\n";
     }
 
-    void agregar(int item){            //Method for Producers to add items to the circular queue.
-        unique_lock<mutex> lock(mtx);                         //Acquire lock! >:)
+    void agregar(int item){             //Method for Producers to add items to the circular queue.
+        unique_lock<mutex> lock(mtx);   //Acquire lock! >:)
         not_full.wait(lock, [this] { return elementos < capacidad; });  //Wait for the Circular Queue to have space.
 
         buffer[final] = item;           //We add the item at the end of the queue.

@@ -42,7 +42,9 @@ public:
     }
 
     void agregar(int item){             //Method for Producers to add items to the circular queue.
-        unique_lock<mutex> lock(mtx);   //Acquire lock! >:)
+        unique_lock<mutex> lock(mtx);   //unique_lock is a "smart" lock that automatically releases the lock when it goes out of scope,
+                                        //removing the need of manual unlock call :D
+                                        //Tomás del Pasado es un ser muy inteligente y superior a Tomás del Futuro.
         not_full.wait(lock, [this] { return elementos < capacidad; });  //Wait for the Circular Queue to have space.
 
         buffer[final] = item;           //We add the item at the end of the queue.
@@ -55,10 +57,10 @@ public:
 
         log << "Añadido: " << item << ". || Tamaño de cola: " << elementos << " || Capacidad: " << capacidad << "\n";
         not_empty.notify_one();         // Notify the waiting consumers that we've got a new batch of ice cream :)
-    }
+    }                                   // unique_lock autimatically releases the mutex here.
 
     bool extraer(int &item, int max_wait_seconds){     // Method for Consumers to extract items from the circular queue.
-        unique_lock<mutex> lock(mtx);         // El mutex es mío, me lo quieren quitar...
+        unique_lock<mutex> lock(mtx);                  // Bruuuuh I'm so smart like hot daaaaayummmmm
 
         if (!not_empty.wait_for(lock, chrono::seconds(max_wait_seconds), [this] { return elementos > 0; })) // Wait for ice cream batches to arrive to the Circular Queue.
             return false; // "bruh, we've been waiting here for [max_wait_seconds], let's get outta here...""
